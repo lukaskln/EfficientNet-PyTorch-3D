@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from captum.attr._utils.custom_modules import Addition_Module
 
 from .utils import (
     round_filters,
@@ -35,6 +36,7 @@ class MBConvBlock3D(nn.Module):
             0 < self._block_args.se_ratio <= 1
         )
         self.id_skip = block_args.id_skip  # skip connection and drop connect
+        self.add = Addition_Module()
 
         # Get static or dynamic convolution depending on image size
         Conv3d = get_same_padding_conv3d(image_size=global_params.image_size)
@@ -124,7 +126,7 @@ class MBConvBlock3D(nn.Module):
         ):
             if drop_connect_rate:
                 x = drop_connect(x, p=drop_connect_rate, training=self.training)
-            x = x + inputs  # skip connection
+            x = self.add(x, inputs)  # skip connection
         return x
 
     def set_swish(self, memory_efficient=True):
